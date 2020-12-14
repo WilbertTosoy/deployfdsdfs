@@ -2,7 +2,11 @@ import "reflect-metadata";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
-import { ConnectionOptions, createConnection, getConnectionOptions } from "typeorm";
+import {
+  ConnectionOptions,
+  createConnection,
+  getConnectionOptions,
+} from "typeorm";
 import cookieParser from "cookie-parser";
 import { verify } from "jsonwebtoken";
 import { User } from "./entity/User";
@@ -13,26 +17,23 @@ import cors from "cors";
 const getOptions = async () => {
   let connectionOptions: ConnectionOptions;
   connectionOptions = {
-    type: 'postgres',
+    type: "postgres",
     synchronize: false,
     logging: false,
-    extra: {
-      ssl: true,
-    },
-    entities: ['dist/entity/*.*'],
+    entities: ["src/entity/**/*.ts"],
   };
   if (process.env.DATABASE_URL) {
+    console.log("data base url exist")
     Object.assign(connectionOptions, { url: process.env.DATABASE_URL });
   } else {
     // gets your default configuration
     // you could get a specific config by name getConnectionOptions('production')
     // or getConnectionOptions(process.env.NODE_ENV)
-    connectionOptions = await getConnectionOptions(); 
+    connectionOptions = await getConnectionOptions();
   }
 
   return connectionOptions;
 };
-
 
 (async () => {
   const app = express();
@@ -90,4 +91,6 @@ const getOptions = async () => {
   app.listen({ port: process.env.PORT || 4000 }, () => {
     console.log("connected to database");
   });
-})();
+})().catch((err) => {
+  console.log(err);
+});
