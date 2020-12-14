@@ -2,13 +2,37 @@ import "reflect-metadata";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
-import { createConnection } from "typeorm";
+import { ConnectionOptions, createConnection, getConnectionOptions } from "typeorm";
 import cookieParser from "cookie-parser";
 import { verify } from "jsonwebtoken";
 import { User } from "./entity/User";
 import { createAccessToken, createRefreshToken } from "./Auth";
 import { sendRefreshToken } from "./sendRefreshToken";
 import cors from "cors";
+
+const getOptions = async () => {
+  let connectionOptions: ConnectionOptions;
+  connectionOptions = {
+    type: 'postgres',
+    synchronize: false,
+    logging: false,
+    extra: {
+      ssl: true,
+    },
+    entities: ['dist/entity/*.*'],
+  };
+  if (process.env.DATABASE_URL) {
+    Object.assign(connectionOptions, { url: process.env.DATABASE_URL });
+  } else {
+    // gets your default configuration
+    // you could get a specific config by name getConnectionOptions('production')
+    // or getConnectionOptions(process.env.NODE_ENV)
+    connectionOptions = await getConnectionOptions(); 
+  }
+
+  return connectionOptions;
+};
+
 
 (async () => {
   const app = express();
@@ -51,7 +75,8 @@ import cors from "cors";
 
     return res.send({ ok: true, accessToken: createAccessToken(user) });
   });
-  await createConnection();
+  const typeormconfig = await getOptions();
+  await createConnection(typeormconfig);
 
   const apolloServer = new ApolloServer({
     schema: await buildSchema({
@@ -63,6 +88,6 @@ import cors from "cors";
   apolloServer.applyMiddleware({ app, cors: false });
 
   app.listen({ port: process.env.PORT || 4000 }, () => {
-    console.log("server started at http://localhost:4000/graphql");
+    console.log("connected to database");
   });
 })();
